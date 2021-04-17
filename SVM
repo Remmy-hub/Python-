@@ -1,0 +1,179 @@
+#%%
+import pandas as pd
+import numpy as  np
+pd.set_option('display.max_columns',None)
+#%%
+train_data=pd.read_csv(r'C:\Users\Lenovo\Documents\Data science\python\SVM\risk_analytics_train.csv',header=0,index_col=0)
+test_data=pd.read_csv(r'C:\Users\Lenovo\Documents\Data science\python\SVM\risk_analytics_test.csv',header=0,index_col=0)
+print(train_data.shape)
+print(test_data.shape)
+#%%
+print(train_data.head())
+print(test_data.head())
+#%%
+#Handling missing values
+train_data.isnull().sum()
+#%%
+test_data.isnull().sum()
+#%%
+train_data.columns
+#%%
+#Imputing  CATEGORICAL MISSING DATA with mode value. 
+#imputing categorical missing data with mode value
+#categorical/discrete valued numerical variables-->mode()
+#continuous valued numerical variable-->mean()/median()
+#blanks and NA values are automatically taken as  NAN  values by pandas
+
+colname1=["Gender","Married","Dependents","Self_Employed", "Loan_Amount_Term"]
+
+for x in colname1:
+    train_data[x].fillna(train_data[x].mode()[0],inplace=True)# inplace = true  -it  will make  the  changes permanently to these observations. 
+    test_data[x].fillna(test_data[x].mode()[0],inplace=True)#here the  variables  having  missing values are the same 
+ #%%
+train_data.isnull().sum()
+#%%
+test_data.isnull().sum() 
+#%%
+  #imputing numerical missing data with mean value
+train_data["LoanAmount"].fillna(round(train_data["LoanAmount"].mean(),0),inplace=True)
+test_data["LoanAmount"].fillna(round(test_data["LoanAmount"].mean(),0),inplace=True) 
+# here we are not  using Int function rather we use round  function, becasue , round  values  if  the  decimal is greater than 0.5  would  take the  next  whole  number value
+# while  int  would  just  take the value    not consideirng  0.5. in this  case  each and every one  
+print(train_data.isnull().sum())
+print()
+print(test_data.isnull().sum())
+#%%
+# #imputing values for credit_history column differently
+# we are not  using  mode value  because  in case the  mode  becomes 1  , then we are telling the  model  indirectly that he  is eligible  coz the rest  of the  parameters were considered  and  he was found eligible  in the  first  place.
+# assuming  he  has  not taken a loan before  so that we can test him with the rest  of the  parameters
+#whether  he  is  eligible  or  not.  
+train_data['Credit_History'].fillna(value=0, inplace=True)
+test_data['Credit_History'].fillna(value=0, inplace=True)
+
+print(train_data.isnull().sum())
+print()
+print(test_data.isnull().sum())
+#%%
+#SVM  is  not affected by outliers and so  we  anot handling  outliers
+#%%
+#transforming categorical data to numerical for training data
+from sklearn.preprocessing import LabelEncoder
+colname=['Gender','Married','Education','Self_Employed','Property_Area',
+'Loan_Status']
+
+le=LabelEncoder()
+
+for x in colname:
+    train_data[x]=le.fit_transform(train_data[x])# label encoder will allways  follow  ascending alphabetical order  
+# fit  creates a dictionary object  key  word and assign the  values in ascending alphabetical order , wher ist value  get  0  and the  others follow accordingly. 
+    
+ #%%
+train_data.head()
+#convert Y-->1 and N--->0
+#%%
+##transforming categorical data to numerical for testing data
+from sklearn.preprocessing import LabelEncoder
+colname=['Gender','Married','Education','Self_Employed','Property_Area'] # here we do not  have loan status for test data, hence  had  to be removed. important to crosscheck.
+
+le=LabelEncoder()
+
+for x in colname:
+    test_data[x]=le.fit_transform(test_data[x])# label encoder will allways  follow  ascending alphabetical order  
+#%%
+test_data.head()
+#%%
+# Creating Testing and training- X and Y.
+#training data
+X_train=train_data.values[:,0:-1]
+Y_train=train_data.values[:,-1]
+Y_train=Y_train.astype(int)
+#%%
+Y_train.shape
+#%%
+#Testing data
+X_test=test_data.values[:,:]
+#%%
+X_test.shape
+#%%
+#Scaling The X datafor training and testing .
+#multilpe  variables with different units and  diffrent ranges. in order to not get it biased  based  on the vraible  with  greater range we  use sclaing.
+# standardization = x-mu/std deviation(sigma). where x= observation, mu= mean  of the  variable and sigma  is std deviavation of the variable.
+from sklearn.preprocessing import StandardScaler
+
+scaler = StandardScaler()
+
+scaler.fit(X_train)
+X_train = scaler.transform(X_train)
+
+X_test = scaler.transform(X_test)
+#%%
+from sklearn.svm import SVC
+svc_model=SVC(kernel='rbf',C=1.0,gamma=0.1)
+svc_model.fit(X_train, Y_train)
+Y_pred=svc_model.predict(X_test)
+print(list(Y_pred))
+#%%
+test_data=pd.read_csv(r'C:\Users\Lenovo\Documents\Data science\python\SVM\risk_analytics_test.csv',header=0)
+test_data["Y_predictions"]=Y_pred
+test_data.head()
+#%%
+test_data["Y_predictions"]=test_data["Y_predictions"].map({1:"Eligible",0:"Not Eligible"})
+#%%
+test_data.head()
+#%%
+test_data.to_excel(r'C:\Users\Lenovo\Documents\Data science\python\SVM\risk_analytics_test1.xlsx')
+#%%
+test_data.Y_predictions.value_counts()
+#%%
+svc_model.score(X_train,Y_train)
+#Y_pred=predict(X_train)
+#accuracy_score(Y_train,Y_pred)
+#score()=predict()+accuracy_score()
+'''
+ 0.7947882736156352
+
+'''
+#%%
+#The acuracy will always be  higher as we ar  testing  on the same training  data.  hence to be safe , we will always  quate  a lesser  accuracy  (3-4% lower )
+#%%
+#Using cross validation- however  this  approach requires enough resources. 
+from sklearn.linear_model import LogisticRegression
+from sklearn import svm
+from sklearn.neighbors import KNeighborsClassifier
+
+#remove the # and  run everytime to check for  the accuracy for each  algorithm
+#classifier=svm.SVC(kernel='rbf',C=1.0,gamma=0.1) #75.89%
+#classifier=KNeighborsClassifier(n_neighbors=11, metric='euclidean') #75.07%, k = 11 by using trial and error. 
+classifier=svm.SVC(kernel='rbf',C=10.0,gamma=0.001) #77.03% # TRIAL AND ERROR  method. 
+#classifier=LogisticRegression() #77.20%
+
+#performing kfold_cross_validation
+from sklearn.model_selection import KFold
+kfold_cv=KFold(n_splits=10) # a iterative  process. when fold =10  is given then  the  data is divided  into 10 equal parts .  10 iterations are carried  out .First iteration  9 parts of the data will give for training  and 1  part for testing.
+# then  the  accuracy is  calculated. during  the second iteration another set of  9 parts are send  for training  and  remaining  1  part for testing. like that randomly parts of  differnt combinations   for which accuracy score  is calculated.
+# in doing  so , we  are training the  model well and  the  problem of  underfitting  is  overcome and  also  test  your  model a  lot of to overcome  in overfitting. 
+
+print(kfold_cv)
+
+from sklearn.model_selection import cross_val_score
+#running the model using scoring metric as accuracy
+kfold_cv_result=cross_val_score(estimator=classifier,X=X_train,
+y=Y_train, cv=kfold_cv)
+print(kfold_cv_result)
+#finding the mean
+print(kfold_cv_result.mean())
+
+#%%
+import pickle
+#%%
+# save the model to disk-hard disk
+filename = 'svc_model.sav'# .sav- is the  file  extension  for saved  model object 
+pickle.dump(svc_model, open(filename, 'wb')) # dump -dumps( or saves )the  model to a file .syntax- pickle.dump(trained  model that needs to be saved,open(file that  you want to save the  model to ,'wb' -write  in bytes  mode))
+#%%
+# load the model from disk
+loaded_model = pickle.load(open(filename, 'rb'))#load -loads the saved file from  disk to the  app . 'rb'- read in bytes  mode.syntax- pickle.load(trained  model, open(fil from which the model  is to be  read, 'rb ' -read mode))
+Y_pred=loaded_model.predict(X_test)
+Y_pred
+#%%
+import os
+os.getcwd()
