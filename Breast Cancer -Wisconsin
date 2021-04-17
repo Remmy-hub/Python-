@@ -1,0 +1,47 @@
+#%%
+import numpy as np
+import pandas as pd
+pd.set_option('display.max_columns',None)
+#%%
+df= pd.read_excel(r'C:\Users\Lenovo\Documents\Data science\breast-cancer.xlsx',header=None)
+df
+#%%
+df.columns=['Class','age','menopause','tumor-size','inv-nodes','node-caps','deg-malig','breast','breast-quad','irradiat']
+df.head()
+#%%
+df.n=pd.DataFrame.copy(df)
+#%%
+df.n.head()
+#%%
+df.n.columns
+
+#%%
+
+df.n=df.n[['age','menopause','tumor-size','inv-nodes','node-caps','deg-malig','breast','breast-quad','irradiat','Class']]
+df.n.head()
+#%%
+# Handling missing values. 
+df.n.isnull().sum()
+#%%
+for i in df.n.columns:
+    print({i:df.n[i].unique()})
+ #%%  
+df.n=df.n.replace('?',np.nan)
+#%%
+df.n.isnull().sum()
+#%%
+df.n.dtypes
+#%%
+for i in ['node-caps','breast-quad']:
+    df.n[i].fillna(df.n[i].mode()[0], inplace=True)
+ #%%   
+df.n.isnull().sum()    
+#%%n
+df.n['tumor-size']=df.n['tumor-size'].astype(str)
+#%%
+df.n['inv-nodes']=df.n['inv-nodes'].astype(str)
+#%%
+df.n.dtypes
+#%%
+df.n.head(-50)
+#%%
